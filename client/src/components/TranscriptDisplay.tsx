@@ -18,7 +18,7 @@ export function TranscriptDisplay({ transcript, interimTranscript, isListening }
   const hasContent = transcript.trim() || interimTranscript.trim();
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 h-96 flex flex-col">
+    <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 h-[80vh] flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h3 className="text-lg font-semibold text-gray-100 flex items-center space-x-2">
           <i className="fas fa-file-alt text-emerald-500"></i>

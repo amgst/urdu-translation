@@ -143,24 +143,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Transcript Display Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <TranscriptDisplay
-              transcript={transcript}
-              interimTranscript={interimTranscript}
-              isListening={isListening}
-            />
-          </div>
-
-          {geminiEnabled && geminiApiKeyAvailable && (
-            <div className="lg:col-span-1">
-              <GeminiPanel
-                correctedText={correctedText}
-                isProcessing={isProcessing}
-              />
-            </div>
-          )}
+        {/* Full Screen Transcript Display */}
+        <div className="mb-6">
+          <TranscriptDisplay
+            transcript={transcript}
+            interimTranscript={interimTranscript}
+            isListening={isListening}
+          />
         </div>
 
       </main>
