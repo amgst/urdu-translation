@@ -121,41 +121,27 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100">
-      {/* Header Section */}
-      <header className="bg-gray-800 shadow-lg border-b border-gray-700">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                <i className="fas fa-microphone text-white text-lg"></i>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-100">Urdu Transcriber</h1>
-                <p className="text-gray-400 text-sm">Real-time speech-to-text for Urdu language</p>
-              </div>
-            </div>
-            
-            {/* Status Indicator */}
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></div>
-              <span className="text-sm text-gray-400">
-                {isListening ? 'Listening' : 'Ready'}
-              </span>
-            </div>
+      {/* Main Content Area */}
+      <main className="flex-1 w-full px-4 py-6 pb-32">
+        
+        {/* Simple Controls */}
+        <div className="mb-6 flex justify-between items-center">
+          {/* Clear Button */}
+          <button 
+            onClick={handleClearTranscript}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+            <i className="fas fa-trash-alt"></i>
+            <span>Clear</span>
+          </button>
+
+          {/* Status Indicator */}
+          <div className="flex items-center space-x-2">
+            <div className={`w-4 h-4 rounded-full ${isListening ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></div>
+            <span className="text-sm text-gray-400">
+              {isListening ? 'Listening' : 'Ready'}
+            </span>
           </div>
         </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 pb-32">
-        
-        {/* Controls Section */}
-        <ControlsPanel
-          onClearTranscript={handleClearTranscript}
-          geminiEnabled={geminiEnabled}
-          onGeminiToggle={setGeminiEnabled}
-          geminiApiKeyAvailable={geminiApiKeyAvailable}
-        />
 
         {/* Transcript Display Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -176,13 +162,6 @@ export default function Home() {
             </div>
           )}
         </div>
-
-        {/* Statistics Section */}
-        <StatsPanel
-          wordCount={wordCount}
-          duration={durationFormatted}
-          correctionsCount={correctedText ? 1 : 0}
-        />
 
       </main>
 
