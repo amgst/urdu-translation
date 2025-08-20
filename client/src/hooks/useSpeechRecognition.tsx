@@ -20,6 +20,8 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
   
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
+  const shouldRestartRef = useRef(false);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check for browser support
   useEffect(() => {
@@ -41,13 +43,34 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
       };
 
       recognition.onend = () => {
-        setIsListening(false);
         setInterimTranscript('');
+        // Auto-restart if we should be listening
+        if (shouldRestartRef.current && !error) {
+          restartTimeoutRef.current = setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (err) {
+              console.log('Recognition restart failed:', err);
+              setIsListening(false);
+              shouldRestartRef.current = false;
+            }
+          }, 100); // Short delay before restarting
+        } else {
+          setIsListening(false);
+          shouldRestartRef.current = false;
+        }
       };
 
       recognition.onerror = (event: any) => {
         setError(getErrorMessage(event.error));
         setIsListening(false);
+        shouldRestartRef.current = false;
+        
+        // Clear any pending restart
+        if (restartTimeoutRef.current) {
+          clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = null;
+        }
       };
 
       recognition.onresult = (event: any) => {
@@ -75,6 +98,10 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
     }
 
     return () => {
+      shouldRestartRef.current = false;
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
@@ -84,11 +111,23 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       setError(null);
-      recognitionRef.current.start();
+      shouldRestartRef.current = true;
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.log('Failed to start recognition:', err);
+        setError('Failed to start speech recognition');
+        shouldRestartRef.current = false;
+      }
     }
   }, [isListening]);
 
   const stopListening = useCallback(() => {
+    shouldRestartRef.current = false;
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
     }
