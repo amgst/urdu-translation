@@ -22,6 +22,8 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
   const finalTranscriptRef = useRef('');
   const shouldRestartRef = useRef(false);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastResultTimestampRef = useRef(0);
+  const processedResultsRef = useRef(new Set<string>());
 
   // Check for browser support
   useEffect(() => {
@@ -74,20 +76,45 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
       };
 
       recognition.onresult = (event: any) => {
+        const currentTimestamp = Date.now();
+        
+        // Skip if this event is too close to the previous one (mobile duplicate prevention)
+        if (currentTimestamp - lastResultTimestampRef.current < 50) {
+          return;
+        }
+        lastResultTimestampRef.current = currentTimestamp;
+
         let interimText = '';
         let finalText = finalTranscriptRef.current;
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
-          const resultText = result[0].transcript;
+          const resultText = result[0].transcript.trim();
+          
+          if (!resultText) continue; // Skip empty results
 
           if (result.isFinal) {
-            // Only add if this text isn't already in our final transcript
-            if (!finalText.includes(resultText.trim())) {
+            // Create a unique key for this result
+            const resultKey = `${resultText}_${i}_${currentTimestamp}`;
+            
+            // Only add if we haven't processed this exact result before
+            if (!processedResultsRef.current.has(resultKey) && 
+                !finalText.toLowerCase().includes(resultText.toLowerCase())) {
+              
+              processedResultsRef.current.add(resultKey);
               finalText += (finalText ? ' ' : '') + resultText;
+              
+              // Clean up old processed results to prevent memory leak
+              if (processedResultsRef.current.size > 50) {
+                const oldKeys = Array.from(processedResultsRef.current).slice(0, 25);
+                oldKeys.forEach(key => processedResultsRef.current.delete(key));
+              }
             }
           } else {
-            interimText += resultText;
+            // For interim results, only show if not already in final text
+            if (!finalText.toLowerCase().includes(resultText.toLowerCase())) {
+              interimText += (interimText ? ' ' : '') + resultText;
+            }
           }
         }
 
@@ -137,6 +164,8 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
     setTranscript('');
     setInterimTranscript('');
     finalTranscriptRef.current = '';
+    processedResultsRef.current.clear();
+    lastResultTimestampRef.current = 0;
   }, []);
 
   const getErrorMessage = (errorType: string): string => {
