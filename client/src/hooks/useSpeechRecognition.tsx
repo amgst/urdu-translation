@@ -76,48 +76,22 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
       };
 
       recognition.onresult = (event: any) => {
-        const currentTimestamp = Date.now();
-        
-        // Skip if this event is too close to the previous one (mobile duplicate prevention)
-        if (currentTimestamp - lastResultTimestampRef.current < 50) {
-          return;
-        }
-        lastResultTimestampRef.current = currentTimestamp;
-
         let interimText = '';
-        let finalText = finalTranscriptRef.current;
+        let finalText = '';
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // Build the complete text from ALL results (this is how Web Speech API works)
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          const resultText = result[0].transcript.trim();
-          
-          if (!resultText) continue; // Skip empty results
+          const resultText = result[0].transcript;
 
           if (result.isFinal) {
-            // Create a unique key for this result
-            const resultKey = `${resultText}_${i}_${currentTimestamp}`;
-            
-            // Only add if we haven't processed this exact result before
-            if (!processedResultsRef.current.has(resultKey) && 
-                !finalText.toLowerCase().includes(resultText.toLowerCase())) {
-              
-              processedResultsRef.current.add(resultKey);
-              finalText += (finalText ? ' ' : '') + resultText;
-              
-              // Clean up old processed results to prevent memory leak
-              if (processedResultsRef.current.size > 50) {
-                const oldKeys = Array.from(processedResultsRef.current).slice(0, 25);
-                oldKeys.forEach(key => processedResultsRef.current.delete(key));
-              }
-            }
+            finalText += resultText;
           } else {
-            // For interim results, only show if not already in final text
-            if (!finalText.toLowerCase().includes(resultText.toLowerCase())) {
-              interimText += (interimText ? ' ' : '') + resultText;
-            }
+            interimText += resultText;
           }
         }
 
+        // Update our state with the complete text from this session
         finalTranscriptRef.current = finalText;
         setTranscript(finalText);
         setInterimTranscript(interimText);
@@ -164,8 +138,6 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
     setTranscript('');
     setInterimTranscript('');
     finalTranscriptRef.current = '';
-    processedResultsRef.current.clear();
-    lastResultTimestampRef.current = 0;
   }, []);
 
   const getErrorMessage = (errorType: string): string => {
